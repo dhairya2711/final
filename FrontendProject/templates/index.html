@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <title>Final Project</title>
+    <script type='text/javascript' src='https://www.bing.com/api/maps/mapcontrol?key=AuGri6_BeHbiJ-wrgHybeCgeMar7m8XRjTMfWytFGBmPscC4Um_ezk6aZXJckuhX&callback=initMap' async defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+    <style>
+        #map{
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            position: absolute;
+        }
+        #searchbar{
+            position: absolute;
+            top: 2em;
+            left: 2em;
+        }
+        #searchicon{
+            position: absolute;
+            top: 5px;
+            left: 0.5em;
+        }
+        #searchInput{
+            width: 20em;
+            padding-left: 2em;
+        }
+        #detailsSection{
+            position: absolute;
+            top:4.5em;
+            height: 90%;
+            width: 23%;
+            background-color: white;
+            display: none;
+            padding: 1em;
+        }
+        .margin_left{
+            margin-left: 1em;
+        }
+        #directionBtn{
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 23%;
+            display: none;
+        }
+        #commentDiv{
+            position: absolute;
+            bottom: 10em;
+            left: 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="other">
+        <div id="searchbar">
+            <div id="searchicon"><i class="fa fa-search"></i></div>
+            <input type="text" id="searchInput" onkeypress="keypressfun(event)" class="form-control"> 
+        </div>
+        <div id="detailsSection">
+            
+        </div>
+        <div id="commentDiv"></div>
+        <button id="directionBtn" class="btn btn-primary">Direction</button>
+    </div>
+
+    <script src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>    
+    <script src="{% static 'js.js' %}"></script>
+
+    <script type="text/babel">
+    class CommentClass extends React.Component{
+        render(){
+            return <div>
+                    <textarea id="comment" rows="4" cols="32" className="form-control" placeholder = "Comment"></textarea>
+                    <button className="btn btn-primary" id="postbtn" onclick="postfunction">Post</button>
+                </div>
+        }
+    }
+
+    ReactDOM.render(<CommentClass/>, document.getElementById("commentDiv"));
+    </script>
+    <script>
+        var map;
+        var radiobtns;
+        var infobox;
+        var myLocation, directionsManager;
+        var base64Image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAAcCAYAAACUJBTQAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3wQbECUudScMXAAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAACGUlEQVRIx+3Wy2sTURTH8e/NTDIzaZMxadMWhyBUSheiiyo+QPpHuHIhdOfSP8GlbkXEhTv/gNau3LgRurEIUqlWU2ubh7evPEg6NjOZJHNdlIgLo11YRcj5A84Hfpx7zxFKKcUJlw7gOM6JAVLKIwTg4avbfxy4c/UJABH+Qg2QAfKfI98f48vc/CCuATJA/iEilFKq3/q98XTk2I0W5qp916/41SHhOM6xoIW5KlLK/t/K6oNbwlAdknELYSZpxTMkxrO4XoCUUv0O6gHlYkjHWxF+yyWTsKit57CGbbTMGSJWepTh05PIRof3mxLNjNP0Pdp+i9ziIyGl7BtFD1hdOqRdei5ijW2shkSvS8LAJTM2gh4JiWzvFNksFdAsA3s0Ram4TrtZJxnXCLwKWSF+CvWAt89czmffiEQ0gGYZzSuTX3tNx60Q1Pcxwyb67JUL7Jb38VsdojETz2ux8W6JqG6iJaOoGLTr98WP0fWAsZgQ849v8mnZYeriLNinwAup722RsW12cysYiRT62voGwymbbsQgMZREcMD1yzN4nkctrNEV4HbrTKeFKNeOJlFKiXtwV2ganJvKkF8rsvxiEd8P0FSTiXQa2wxJxEz2yl/QA2Mc2Qihq7NdqdE5rJAc2ufsZBbTiIIGXWXTVeCIa0glMQwh8vl7hMDHD5+Zmb7E16ZPtVrFilnsFLY42CngTDhEohbfALpF/s+4JwbyAAAAAElFTkSuQmCC';
+        
+        function postfunctiion(){
+            
+        }
+
+        function keypressfun(event){
+            var code = event.keyCode;
+            console.log(code);
+            if(code == 13){
+                searchAdd(document.getElementById("searchInput").value);
+            }
+        }
+
+        function searchAdd(address){
+            deleteAllPushPins();
+
+            // add user pushpin
+            if(this.myLocation != null){
+                var pushpin = new Microsoft.Maps.Pushpin(myLocation, {title: "My Location", icon: base64Image, color: 'red', iconSize: { width: 25, height: 27 }});
+                pushpin.metadata = {
+                    title: "My Location", 
+                    description: "Laitude: "+myLocation.latitude.toFixed(4)+"\nLongitude:"+ myLocation.longitude.toFixed(4)
+                };
+                Microsoft.Maps.Events.addHandler(pushpin, 'click', function (arg) {
+                    openInfoBox(this.map, arg, true);
+                }, ()=>{console.log("Permission");});
+                this.map.entities.push(pushpin);
+            }
+
+            var seradd = address;
+            Microsoft.Maps.loadModule('Microsoft.Maps.Search', function () {
+                var searchManager = new Microsoft.Maps.Search.SearchManager(this.map);
+                var requestOptions = {
+                    where: seradd,
+                    callback: function (answer) {
+                        map.setView({ bounds: answer.results[0].bestView });
+                        var serpushpin = new Microsoft.Maps.Pushpin(answer.results[0].location, {title: "Searched Location",icon: 'https://www.bingmapsportal.com/Content/images/poi_custom.png', iconSize: {width: 15, height: 20}});
+                        
+                        serpushpin.metadata = {
+                            title:"Searched Location", 
+                            description: "<p class='h2'>Searched Location:</p>"+seradd+"<br>"
+                        };
+                        Microsoft.Maps.Events.addHandler(serpushpin, 'click', (arg)=> {
+                            openInfoBox(this.map, arg, false);
+                        });
+
+                        map.entities.push(serpushpin);
+                    }
+                };
+                searchManager.geocode(requestOptions);
+            });
+        }
+        function deleteAllPushPins(){
+            // delete pushpins
+            for (var i = this.map.entities.getLength() - 1; i >= 0; i--) {
+                var pushpin = this.map.entities.get(i);
+                if (pushpin instanceof Microsoft.Maps.Pushpin) {
+                    this.map.entities.removeAt(i);
+                }
+            }
+        }
+
+
+        function openInfoBox(map, arg, mine){
+
+            if(mine){   
+                this.infobox.setOptions({
+                    location: arg.target.getLocation(),
+                    title: arg.target.metadata.title,
+                    description: arg.target.metadata.description,
+                    visible: true
+                });
+            }
+            else{
+                var details = document.getElementById("detailsSection");
+                details.style.display = "block";
+                var post = document.getElementById("commentDiv");
+                post.style.display = "block";
+                details.innerHTML = arg.target.metadata.description;
+                document.getElementById("directionBtn").style.display = "block";
+                document.getElementById("directionBtn").onclick = ()=>{
+                    console.log(arg.target.getLocation());
+                    var lat = arg.target.getLocation().latitude;
+                    var long= arg.target.getLocation().longitude;
+                    getDirectionFunction(lat, long);
+                };
+                this.infobox.setOptions({
+                    location: arg.target.getLocation(),
+                    title: arg.target.metadata.title,
+                    visible: true
+                });
+            }
+            infobox.setMap(this.map);
+        }
+
+        function getDirectionFunction(lat, lng){
+            if(this.myLocation == null){alert("Can't find your location.");}
+            else{
+                clrDirections();
+                Microsoft.Maps.loadModule('Microsoft.Maps.Directions', function(){
+                    this.directionsManager = new Microsoft.Maps.Directions.DirectionsManager(this.map);
+                    this.directionsManager.setRequestOptions({ routeMode: Microsoft.Maps.Directions.RouteMode.driving });
+                    var waypoint1 = new Microsoft.Maps.Directions.Waypoint({ location: this.myLocation});
+                    var waypoint2 = new Microsoft.Maps.Directions.Waypoint({ location: new Microsoft.Maps.Location(lat, lng) });
+                    this.directionsManager.addWaypoint(waypoint1);
+                    this.directionsManager.addWaypoint(waypoint2);
+                    // Set the element in which the itinerary will be rendered
+                    this.directionsManager.setRenderOptions({ itineraryContainer: document.getElementById('directionbodypart') });
+                    this.directionsManager.calculateDirections();
+                });
+            }
+        }
+        function clrDirections(){
+            try{this.infobox.setMap(null);}
+            catch(e){}
+            this.directionsManager.clearAll();
+        }
+
+        function addInstitute(map){
+            education.forEach(element => {
+                var instituteLocation = new Microsoft.Maps.Location(element.latitude, element.longitude);
+                console.log(instituteLocation);
+                var pushpin = new Microsoft.Maps.Pushpin(instituteLocation, 
+                {icon: 'https://www.bingmapsportal.com/Content/images/poi_custom.png', iconSize: {width: 15, height: 20}});
+                pushpin.metadata = {
+                    title:"", 
+                    description: "<div id='address' class='h3'>"+element.address+"</div>"+
+                    "<span style='margin-top: 1em; margin-bottom: 1em;' class='margin_left'><div class='days'><strong>Monday: </strong>"+element.open.Monday+"</div>"+       
+                    "<div class='days'><strong>Tuesday: </strong>"+element.open.Tuesday+"</div>"+
+                    "<div class='days'><strong>Wednesday: </strong>"+element.open.Wednesday+"</div>"+
+                    "<div class='days'><strong>Thursday: </strong>"+element.open.Thursday+"</div>"+
+                    "<div class='days'><strong>Friday: </strong>"+element.open.Friday+"</div>"+
+                    "<div class='days'><strong>Saturday: </strong>"+element.open.Saturday+"</div>"+
+                    "<div class='days'><strong>Sunday: </strong>"+element.open.Sunday+"</div></span>"+
+                    "<div class='days' style='margin-top: 1em;'><strong>Call: </strong>"+element.call+"</div>",
+                    
+                };
+                Microsoft.Maps.Events.addHandler(pushpin, 'click', (arg)=> {
+                    openInfoBox(this.map, arg, false);
+                });
+                this.map.entities.push(pushpin);
+            });
+
+        }
+        function myLocationFunction(map){
+            if(navigator.geolocation){
+                navigator.geolocation.getCurrentPosition(pos => {
+                var myLocation = new Microsoft.Maps.Location(pos.coords.latitude, pos.coords.longitude);
+                this.myLocation = myLocation;
+                var pushpin = new Microsoft.Maps.Pushpin(myLocation, {title: "My Location", icon: base64Image, color: 'red', iconSize: { width: 25, height: 27 }});
+                pushpin.metadata = {
+                    title: "My Location",
+                    description: "Laitude: "+myLocation.latitude.toFixed(4)+"\nLongitude:"+ myLocation.longitude.toFixed(4)
+                };
+                Microsoft.Maps.Events.addHandler(pushpin, 'click', function (arg) {
+                    openInfoBox(this.map, arg, true);
+                }, ()=>{console.log("Permission");});
+                this.map.entities.push(pushpin);});
+            }else{
+                console.log("Something went wrong for location");
+            }
+            addInstitute(this.map);
+        }
+        function initMap(){
+            this.map = new Microsoft.Maps.Map(document.getElementById('map'), {
+                zoom:12
+            });
+
+            Microsoft.Maps.loadModule('Microsoft.Maps.Directions', function(){
+                this.directionsManager = new Microsoft.Maps.Directions.DirectionsManager(this.map);
+            });
+            this.infobox = new Microsoft.Maps.Infobox(null, null);
+            myLocationFunction(this.map);
+        }
+    </script>
+</body>
+</html>
